@@ -124,7 +124,7 @@ def get_twitter_info(movie):
 		#print (lst)
 
 	CACHE_DICTION[movie] = lst
-	f = open('CACHE_FNAME', 'w')
+	f = open(CACHE_FNAME, 'w')
 	f.write(json.dumps(CACHE_DICTION))
 	f.close()
 
