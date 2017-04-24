@@ -53,39 +53,37 @@ class Movie():
 
 
 	def __str__(self):
-		#print ('I have found your data on %s' % (self.movie_name))
 		return ('I have found your data on %s' % (self.movie_name))
 
 	def get_movie_info(self):
 		unique_id = 'OMDB_%s'%(self.movie_name)
 
 		if unique_id in CACHE_DICTION:
-			#print ('Using Cache data to get info about %s' (self.movie_name))
+			print ('Using Cache data to get info about %s' % (self.movie_name))
+			print ('----------------------------------------')
 			json_load = CACHE_DICTION[unique_id]
-		else:
-			#print ('Getting data on %s' (self.movie_name))
-			params = {'apikey': 'ee457035', 'format': 'json', 't': self.movie_name}
-			api = requests.get('http://www.omdbapi.com/?', params = params)
-			#print (api.status_code)
-			json_load = json.loads(api.text)
-			#print (json_load)
-			#self.movie_data.append(json_load)
-			self.movie_data[self.movie_name] = json_load
-			pp = pprint.PrettyPrinter(indent=4)
-			#pp.pprint(json_load)
+			self.movie_data[self.movie_name] = (json_load)
 			self.movie_actors.append(json_load['Actors'])
-			#self.movie_director.append(json_load['Director'])
 			self.movie_IMDB_rating.append(json_load['imdbRating'])
 			self.movie_Year.append(json_load['Year'])
 			self.movie_BoxOffice.append(json_load['BoxOffice'])
 			self.movie_director.append(json_load['Director'])
-			#print (self.movie_director)
 			self.ID.append(json_load['imdbID'])
-			# print (json_load['Actors'])
-			# print (json_load['Director'])
-			# print (json_load['imdbRating'])
-			# print (json_load['Year'])
-			# print (json_load['BoxOffice'])
+		else:
+			print ('Getting data on %s' % (self.movie_name))
+			print ('----------------------------------------')
+			params = {'apikey': 'ee457035', 'r': 'json', 't': self.movie_name}
+			api = requests.get('http://www.omdbapi.com/?', params = params)
+			json_load = json.loads(api.text)
+			self.movie_data[self.movie_name] = (json_load)
+			pp = pprint.PrettyPrinter(indent=4)
+			#pp.pprint(json_load)
+			self.movie_actors.append(json_load['Actors'])
+			self.movie_IMDB_rating.append(json_load['imdbRating'])
+			self.movie_Year.append(json_load['Year'])
+			self.movie_BoxOffice.append(json_load['BoxOffice'])
+			self.movie_director.append(json_load['Director'])
+			self.ID.append(json_load['imdbID'])
 
 		CACHE_DICTION[unique_id] = json_load
 		f = open(CACHE_FNAME, 'w')
@@ -94,32 +92,6 @@ class Movie():
 		return (json_load)
 
 
-zzz = Movie('Inception')
-print (zzz)
-# def get_movie_info(self):
-# 		params = {'apikey': 'ee457035', 'format': 'json', 't': self.movie_name}
-# 		api = requests.get('http://www.omdbapi.com/?', params = params)
-# 		#print (api.status_code)
-# 		json_load = json.loads(api.text)
-# 		#print (json_load)
-# 		#self.movie_data.append(json_load)
-# 		self.movie_data[self.movie_name] = json_load
-# 		pp = pprint.PrettyPrinter(indent=4)
-# 		#pp.pprint(json_load)
-# 		self.movie_actors.append(json_load['Actors'])
-# 		#self.movie_director.append(json_load['Director'])
-# 		self.movie_IMDB_rating.append(json_load['imdbRating'])
-# 		self.movie_Year.append(json_load['Year'])
-# 		self.movie_BoxOffice.append(json_load['BoxOffice'])
-# 		self.movie_director.append(json_load['Director'])
-# 		#print (self.movie_director)
-# 		self.ID.append(json_load['imdbID'])
-# 		# print (json_load['Actors'])
-# 		# print (json_load['Director'])
-# 		# print (json_load['imdbRating'])
-# 		# print (json_load['Year'])
-# 		# print (json_load['BoxOffice'])
-# 		return (json_load)
 
 list_of_Movie_data = []
 list_of_Movie_instances = []
@@ -128,18 +100,8 @@ movie_dict = ['Inception', 'Avatar', 'Forrest Gump']
 for x in movie_dict:
 	m = Movie(x)
 	m.get_movie_info()
-	x = Movie(x)
-	#x.get_movie_info
-	# print (m.movie_name)
-	# print (x.get_movie_info)
 	list_of_Movie_data.append(m.movie_data)
-	#list_of_Movie_instances.append(x.movie_data)
 
-#print (list_of_Movie_instances)
-
-# f = Movie('Interstellar')
-# f.get_movie_info()
-# print (f.movie_actors)
 
 
 #### GRAB TWITTER INFO FOR THE 3 DIRECTORS
@@ -149,9 +111,11 @@ def get_twitter_info(movie):
 	unique_id = 'twitter_%s'%(movie)
 	if unique_id in CACHE_DICTION:
 		print ('Using cache data to find Tweets about %s' % (movie))
+		print ('----------------------------------------')
 		lst = CACHE_DICTION[unique_id]
 	else:
 		print ('Getting data on Tweets about %s' % (movie))
+		print ('----------------------------------------')
 		x = Movie(movie)
 		x.get_movie_info()
 		search = x.movie_director
@@ -179,43 +143,23 @@ for x in movie_dict:
 	lst_of_twitter_info.append(ff)
 
 
-# for x in list_of_Movie_data:
-# 	for z in x:
-# 		pp = pprint.PrettyPrinter(indent=4)
-# 		pp.pprint(x[z])
-# 	# movie_id.append(x['imdbID'])
-# 	# title.append(x['Title'])
-	# director.append(x['Director'])
-	# num_languages.append(len(x['Language']))
-	# IMDB_rating.append(x['imdbRating'])
-	# print (x['Actors'])
-	# box_office.append(x['BoxOffice'])
-	# year.append(x['Year'])
-
 ### GRAB INFO FROM THE RETURNED OMDB AND TWITTER DATA
 ### NEED THIS INFO TO BE THE CORRECT 'TYPE' IN ORDER TO BE ACCEPTED BY THE DATABASE (I.E. TITLE IS A STRING/TEXT)
 
-movie_id = [x[z]['imdbID'] for x in list_of_Movie_data for z in x] ## NEED TO CONVERT TO AN INTEGER
+movie_id = [x[z]['imdbID'] for x in list_of_Movie_data for z in x]
 title = [x[z]['Title'] for x in list_of_Movie_data for z in x]
 director = [x[z]['Director'] for x in list_of_Movie_data for z in x]
-num_languages = [x[z]['Language'] for x in list_of_Movie_data for z in x] ## STILL NEED TO GET THE COUNT OF THESE, NOT A STRING OF THE LANGS OFFERED
-IMDB_rating = [x[z]['imdbRating'] for x in list_of_Movie_data for z in x] # DOES THIS NEED TO BE AN INTEGER? IS IN A STRING NOW
-lead_actor = [x[z]['Actors'] for x in list_of_Movie_data for z in x]    ## STILL NEED TO SPLIT THIS AND GET THE FIRST ACTOR
+languages = [x[z]['Language'] for x in list_of_Movie_data for z in x]
+num_languages = [len(m.split(', ')) for m in languages]
+IMDB_rating = [x[z]['imdbRating'] for x in list_of_Movie_data for z in x]
+actors = [x[z]['Actors'] for x in list_of_Movie_data for z in x]
+lead_actor = [(x.split(', '))[0] for x in actors]
 box_office = [x[z]['BoxOffice'] for x in list_of_Movie_data for z in x]
 year = [x[z]['Year'] for x in list_of_Movie_data for z in x]
 
 tups_of_movies = list(zip(movie_id, title, director, num_languages, IMDB_rating, lead_actor, box_office, year))
 
 
-# print (tups_of_movies)
-# # for x in lst_of_twitter_info:
-# # 	for z in x['statuses']:
-# # 		pp = pprint.PrettyPrinter(indent=4)
-# # 		pp.pprint(z)
-# 		#pp.pprint(z['entities'])
-
-
-movie_in_tweet = [] ## Struggling here to get the movie that is used in the tweet. Do I have to get this from the beginning where I grab the tweets?
 
 tweet_id = [z['id'] for x in lst_of_twitter_info for z in x['statuses']]
 user_id = [z['user']['id'] for x in lst_of_twitter_info for z in x['statuses']]
@@ -225,10 +169,6 @@ tweet_retweets = [z['retweet_count'] for x in lst_of_twitter_info for z in x['st
 user_name = [z['user']['screen_name'] for x in lst_of_twitter_info for z in x['statuses']]
 user_total_favorites = [z['user']['favourites_count'] for x in lst_of_twitter_info for z in x['statuses']]
 mentioned_users_id = [n['id'] for x in lst_of_twitter_info for z in x['statuses'] for n in z['entities']['user_mentions']]
-#print (mentioned_users_id)
-# print (tweet_retweets)
-# print (text)
-
 
 
 ### ZIP THE DATA INTO TUPLES THAT REPRESENT EACH TWEET
@@ -250,18 +190,18 @@ Tweets_specs = "CREATE TABLE IF NOT EXISTS "
 Tweets_specs += "Tweets (tweet_id INTEGER PRIMARY KEY, text TEXT, user_id TEXT, favorites INTEGER, retweets INTEGER)"
 cur.execute(Tweets_specs)
 
-cur.execute("DROP TABLE IF EXISTS Users")
-Users_specs = "CREATE TABLE IF NOT EXISTS "
-Users_specs += "Users (user_id INTEGER PRIMARY KEY, user_name TEXT, num_favorites INTEGER)"
-cur.execute(Users_specs)
+# cur.execute("DROP TABLE IF EXISTS Users")
+# Users_specs = "CREATE TABLE IF NOT EXISTS "
+# Users_specs += "Users (user_id INTEGER PRIMARY KEY, user_name TEXT, num_favorites INTEGER)"
+# cur.execute(Users_specs)
 
 state1 = "DELETE FROM Movies"
 state2 = "DELETE FROM Tweets"
-state3 = "DELETE FROM Users"
+#state3 = "DELETE FROM Users"
 
 cur.execute(state1)
 cur.execute(state2)
-cur.execute(state3)
+#cur.execute(state3)
 conn.commit()
 
 tweet_insert_statement = 'INSERT INTO Tweets VALUES (?,?,?,?,?)'
