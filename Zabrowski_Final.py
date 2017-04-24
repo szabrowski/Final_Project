@@ -157,10 +157,6 @@ lead_actor = [(x.split(', '))[0] for x in actors]
 box_office = [x[z]['BoxOffice'] for x in list_of_Movie_data for z in x]
 year = [x[z]['Year'] for x in list_of_Movie_data for z in x]
 
-tups_of_movies = list(zip(movie_id, title, director, num_languages, IMDB_rating, lead_actor, box_office, year))
-
-
-
 tweet_id = [z['id'] for x in lst_of_twitter_info for z in x['statuses']]
 user_id = [z['user']['id'] for x in lst_of_twitter_info for z in x['statuses']]
 text = [z['text'] for x in lst_of_twitter_info for z in x['statuses']]
@@ -169,11 +165,19 @@ tweet_retweets = [z['retweet_count'] for x in lst_of_twitter_info for z in x['st
 user_name = [z['user']['screen_name'] for x in lst_of_twitter_info for z in x['statuses']]
 user_total_favorites = [z['user']['favourites_count'] for x in lst_of_twitter_info for z in x['statuses']]
 mentioned_users_id = [n['id'] for x in lst_of_twitter_info for z in x['statuses'] for n in z['entities']['user_mentions']]
+mentioned_users_screen_name = [n['screen_name'] for x in lst_of_twitter_info for z in x['statuses'] for n in z['entities']['user_mentions']]
+mentioned_users_favs = [twitter_api.get_user(x)['favourites_count'] for x in mentioned_users_id]
 
+users_total = mentioned_users_id + user_id
+screen_name_total = mentioned_users_screen_name + user_id
+total_user_favs = mentioned_users_favs + user_total_favorites
 
 ### ZIP THE DATA INTO TUPLES THAT REPRESENT EACH TWEET
 
+tups_of_movies = list(zip(movie_id, title, director, num_languages, IMDB_rating, lead_actor, box_office, year))
 tweets_of_directors = list(zip(tweet_id, text, user_id,tweet_favorites, tweet_retweets))
+tup_of_users = list(zip(users_total, screen_name_total, total_user_favs))
+
 
 conn = sqlite3.connect('final_project.db')
 cur = conn.cursor()
@@ -190,18 +194,18 @@ Tweets_specs = "CREATE TABLE IF NOT EXISTS "
 Tweets_specs += "Tweets (tweet_id INTEGER PRIMARY KEY, text TEXT, user_id TEXT, favorites INTEGER, retweets INTEGER)"
 cur.execute(Tweets_specs)
 
-# cur.execute("DROP TABLE IF EXISTS Users")
-# Users_specs = "CREATE TABLE IF NOT EXISTS "
-# Users_specs += "Users (user_id INTEGER PRIMARY KEY, user_name TEXT, num_favorites INTEGER)"
-# cur.execute(Users_specs)
+cur.execute("DROP TABLE IF EXISTS Users")
+Users_specs = "CREATE TABLE IF NOT EXISTS "
+Users_specs += "Users (user_id INTEGER PRIMARY KEY, user_name TEXT, num_favorites INTEGER)"
+cur.execute(Users_specs)
 
 state1 = "DELETE FROM Movies"
 state2 = "DELETE FROM Tweets"
-#state3 = "DELETE FROM Users"
+state3 = "DELETE FROM Users"
 
 cur.execute(state1)
 cur.execute(state2)
-#cur.execute(state3)
+cur.execute(state3)
 conn.commit()
 
 tweet_insert_statement = 'INSERT INTO Tweets VALUES (?,?,?,?,?)'
@@ -218,6 +222,14 @@ movie_insert_statement = 'INSERT INTO Movies VALUES (?,?,?,?,?,?,?,?)'
 for z in tups_of_movies:
 	cur.execute(movie_insert_statement, z)
 
+user_insert_statement = 'INSERT INTO Users VALUES (?,?,?)'
+
+for m in tup_of_users:
+	try:
+		cur.execute(user_insert_statement, m)
+	except sqlite3.IntegrityError:
+		pass
+		
 conn.commit()
 
 
