@@ -261,7 +261,7 @@ high_rating = list(cur.execute(query_analysis))
 
 total_combined_rate = list(itertools.accumulate(high_rating))
 tup_ratings = total_combined_rate[-1]
-print(tup_ratings)
+#print(tup_ratings)
 
 query5 = 'SELECT Text, retweets FROM Tweets'
 high_favs = list(cur.execute(query5))
@@ -272,7 +272,7 @@ movies_w_high_favs = list(cur.execute(query6))
 query7 = 'SELECT Movies.title, Movies.box_office FROM Movies'
 movies_box_office = list(cur.execute(query7))
 m = sorted(movies_box_office, key = lambda x:x[-1])
-print (m)
+#print (m)
 
 query8 = 'SELECT Movies.title, Tweets.favorites FROM Movies INNER JOIN Tweets ON instr(Movies.title, Tweets.mention_movie)'
 favs_per_movie = list(cur.execute(query8))
@@ -290,7 +290,7 @@ summary_file = '%s_OMDB&Tweet_Data_4-25-16.txt' % (movie_dict[0]+"_"+movie_dict[
 w = open(summary_file, 'w')
 w.write('Movies with more than 5 favorites: ' + str(dict_favs) + "  ")
 w.write('Total Favorites for these movie: ' + str(total_favorites) + "  ")
-#w.write(str(movies_box_office))
+w.write('Movies sorted by box office: ' + str(m) + " ")
 w.write('All Ratings ' + str(tup_ratings) + " ")
 w.close()
 
@@ -306,24 +306,21 @@ class Tests(unittest.TestCase):
 	def test_Tweets(self):
 		m = get_twitter_info('Inception')
 		self.assertTrue(len(m)>0)
-	def test_Tweets2(self):
-		m = Tweets('Inception')
-		self.assertEqual(type(m),dict)
 	def test_Movies1(self):
-		m = Movies(movie = 'Inception')
-		self.assertTrue(type(m), dict)
+		m = Movie('Inception').get_movie_info()
+		self.assertEqual(type(m),dict)
 	def test_Movies2(self):
-		m = Movies(director = 'Christopher Nolan').ratings
-		self.assertEqual(type(m), list)
+		m = Movie('Inception').__str__()
+		self.assertTrue(type(m), str)
 	def test_Movies3(self):
-		m = Movies(director = 'Christopher Nolan').ratings
-		self.assertTrue(len(m)>0)
+		self.assertEqual(len(IMDB_rating),len(title))
 	def test_Movies4(self):
-		m = Movies(director = 'Christopher Nolan', movie = 'Inception').ratings
-		self.assertTrue(len(m)>1)
-
-
-#
+		m = Movie('Inception').__str__()
+		self.assertEqual(m, 'I have found your data on Inception')
+	def test_Tup(self):
+		self.assertEqual(type(tup_ratings), tuple)
+	def test_tups_movies(self):
+		self.assertEqual(len(tups_of_movies), 3)
 ## Remember to invoke all your tests...
 
 if __name__ == "__main__":
