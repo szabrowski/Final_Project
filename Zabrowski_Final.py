@@ -94,7 +94,6 @@ class Movie():
 
 
 list_of_Movie_data = []
-list_of_Movie_instances = []
 movie_dict = ['Inception', 'Avatar', 'Forrest Gump']
 
 for x in movie_dict:
@@ -125,7 +124,7 @@ def get_twitter_info(movie):
 		string = json.dumps(search_results)
 		json_loader = json.loads(string)
 		pp = pprint.PrettyPrinter(indent=4)
-		pp.pprint(json_loader)
+		#pp.pprint(json_loader)
 		lst = json_loader
 		#print (lst)
 
@@ -136,12 +135,35 @@ def get_twitter_info(movie):
 
 	return lst
 
+pp = pprint.PrettyPrinter(indent=4)
 
 lst_of_twitter_info = []
+# user_movie_mention = []
+# mentioned_user_movie_mention = []
+movie_mentions_list = []
+
+
 for x in movie_dict:
+	user_movie_mention = []
+	mentioned_user_movie_mention = []
 	ff = get_twitter_info(x)
 	lst_of_twitter_info.append(ff)
+	for z in ff['statuses']:
+		#pp.pprint(z['text'])
+		user_movie_mention.append(z['text'])
+		for n in z['entities']['user_mentions']:
+			mentioned_user_movie_mention.append(n['id'])
+	movie_mentions_list.append([x]*len(user_movie_mention + mentioned_user_movie_mention))
 
+mention_movie = []
+for x in movie_mentions_list:
+	for z in x:
+		mention_movie.append((z))
+
+
+#pp.pprint(lst_of_twitter_info)
+
+#print (mention_movie)
 
 ### GRAB INFO FROM THE RETURNED OMDB AND TWITTER DATA
 ### NEED THIS INFO TO BE THE CORRECT 'TYPE' IN ORDER TO BE ACCEPTED BY THE DATABASE (I.E. TITLE IS A STRING/TEXT)
@@ -156,7 +178,6 @@ actors = [x[z]['Actors'] for x in list_of_Movie_data for z in x]
 lead_actor = [(x.split(', '))[0] for x in actors]
 box_office = [x[z]['BoxOffice'] for x in list_of_Movie_data for z in x]
 year = [x[z]['Year'] for x in list_of_Movie_data for z in x]
-
 tweet_id = [z['id'] for x in lst_of_twitter_info for z in x['statuses']]
 user_id = [z['user']['id'] for x in lst_of_twitter_info for z in x['statuses']]
 text = [z['text'] for x in lst_of_twitter_info for z in x['statuses']]
@@ -167,17 +188,19 @@ user_total_favorites = [z['user']['favourites_count'] for x in lst_of_twitter_in
 mentioned_users_id = [n['id'] for x in lst_of_twitter_info for z in x['statuses'] for n in z['entities']['user_mentions']]
 mentioned_users_screen_name = [n['screen_name'] for x in lst_of_twitter_info for z in x['statuses'] for n in z['entities']['user_mentions']]
 mentioned_users_favs = [twitter_api.get_user(x)['favourites_count'] for x in mentioned_users_id]
-
+#print (mentioned_users_favs)
 users_total = mentioned_users_id + user_id
 screen_name_total = mentioned_users_screen_name + user_id
 total_user_favs = mentioned_users_favs + user_total_favorites
 
+# print (len(mentioned_users_id))
 ### ZIP THE DATA INTO TUPLES THAT REPRESENT EACH TWEET
 
 tups_of_movies = list(zip(movie_id, title, director, num_languages, IMDB_rating, lead_actor, box_office, year))
-tweets_of_directors = list(zip(tweet_id, text, user_id,tweet_favorites, tweet_retweets))
+tweets_of_directors = list(zip(tweet_id, text, user_id,tweet_favorites, tweet_retweets, mention_movie))
 tup_of_users = list(zip(users_total, screen_name_total, total_user_favs))
 
+### CREATE DATABASE
 
 conn = sqlite3.connect('final_project.db')
 cur = conn.cursor()
@@ -191,7 +214,7 @@ cur.execute(Movies_specs)
 
 cur.execute("DROP TABLE IF EXISTS Tweets")
 Tweets_specs = "CREATE TABLE IF NOT EXISTS "
-Tweets_specs += "Tweets (tweet_id INTEGER PRIMARY KEY, text TEXT, user_id TEXT, favorites INTEGER, retweets INTEGER)"
+Tweets_specs += "Tweets (tweet_id INTEGER PRIMARY KEY, text TEXT, user_id TEXT, favorites INTEGER, retweets INTEGER, mention_movie TEXT)"
 cur.execute(Tweets_specs)
 
 cur.execute("DROP TABLE IF EXISTS Users")
@@ -208,7 +231,7 @@ cur.execute(state2)
 cur.execute(state3)
 conn.commit()
 
-tweet_insert_statement = 'INSERT INTO Tweets VALUES (?,?,?,?,?)'
+tweet_insert_statement = 'INSERT INTO Tweets VALUES (?,?,?,?,?, ?)'
 for x in tweets_of_directors:
 	try:
 		cur.execute(tweet_insert_statement, x)
@@ -232,7 +255,44 @@ for m in tup_of_users:
 		
 conn.commit()
 
+### ACCESS DATABASE AND ANALYZE IT. THEN WRITE IT TO A TEXT FILE ###
+query_analysis = 'SELECT IMDB_rating FROM Movies'
+high_rating = list(cur.execute(query_analysis))
 
+total_combined_rate = list(itertools.accumulate(high_rating))
+tup_ratings = total_combined_rate[-1]
+print(tup_ratings)
+
+query5 = 'SELECT Text, retweets FROM Tweets'
+high_favs = list(cur.execute(query5))
+
+query6 = 'SELECT Movies.title, Tweets.favorites FROM Movies INNER JOIN Tweets ON instr(Movies.title, Tweets.mention_movie) WHERE Tweets.favorites>5'
+movies_w_high_favs = list(cur.execute(query6))
+
+query7 = 'SELECT Movies.title, Movies.box_office FROM Movies'
+movies_box_office = list(cur.execute(query7))
+m = sorted(movies_box_office, key = lambda x:x[-1])
+print (m)
+
+query8 = 'SELECT Movies.title, Tweets.favorites FROM Movies INNER JOIN Tweets ON instr(Movies.title, Tweets.mention_movie)'
+favs_per_movie = list(cur.execute(query8))
+
+total_favorites = 0
+
+for x in favs_per_movie:
+	total_favorites += int(x[1])
+
+dict_favs = {x[0]:x[1] for x in movies_w_high_favs}  ### WOULD BE MORE USEFUL WITH MORE MOVIES
+
+
+
+summary_file = '%s_OMDB&Tweet_Data_4-25-16.txt' % (movie_dict[0]+"_"+movie_dict[1]+"_"+movie_dict[2])
+w = open(summary_file, 'w')
+w.write('Movies with more than 5 favorites: ' + str(dict_favs) + "  ")
+w.write('Total Favorites for these movie: ' + str(total_favorites) + "  ")
+#w.write(str(movies_box_office))
+w.write('All Ratings ' + str(tup_ratings) + " ")
+w.close()
 
 ### TESTS NEED TO BE BETTER
 
@@ -241,10 +301,10 @@ conn.commit()
 
 class Tests(unittest.TestCase):
 	def test_caching(self):
-		x = open('SI206_cache', 'r').read()
-		self.assertTrue('MOVIED_XYZ' in x)
+		x = open('206_final_project_cache.json', 'r').read()
+		self.assertTrue('OMDB_Inception' in x)
 	def test_Tweets(self):
-		m = Tweets('Inception')
+		m = get_twitter_info('Inception')
 		self.assertTrue(len(m)>0)
 	def test_Tweets2(self):
 		m = Tweets('Inception')
@@ -266,5 +326,5 @@ class Tests(unittest.TestCase):
 #
 ## Remember to invoke all your tests...
 
-# if __name__ == "__main__":
-# 	unittest.main(verbosity=2)
+if __name__ == "__main__":
+	unittest.main(verbosity=2)
